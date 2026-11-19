@@ -30,13 +30,15 @@ STYLES = {
     'natural': dict(
         # contrast/clarity 0 (not -5/-3) and lighter blur: the first renders looked hazy and smeared.
         exposure_ev=0.20, temperature_k=-300, contrast=0, highlights=-35, shadows=25, whites=5, blacks=5,
-        texture=6, clarity=0, vibrance=5, saturation=-3, background_saturation=-10, face_ev=0.15,
-        blur=0.007, face_frac=0.21, eye_line=0.34, offset_x=0.04, retouch=0.0, vignette=0.0, sharpen=0.55,
+        texture=2, clarity=0, vibrance=5, saturation=-3, background_saturation=-10, face_ev=0.15,
+        blur=0.007, face_frac=0.21, eye_line=0.34, offset_x=0.04, retouch=0.0, vignette=0.0, sharpen=0.20,
+        denoise=4,
         grade='vivid'),
     'professional': dict(
         exposure_ev=0.10, temperature_k=-500, contrast=8, highlights=-40, shadows=20, whites=5, blacks=-5,
-        texture=5, clarity=3, vibrance=0, saturation=-5, background_saturation=-20, face_ev=0.20,
-        blur=0.022, face_frac=0.28, eye_line=0.33, offset_x=0.0, retouch=0.25, vignette=0.06, sharpen=0.50,
+        texture=2, clarity=3, vibrance=0, saturation=-5, background_saturation=-20, face_ev=0.20,
+        blur=0.022, face_frac=0.28, eye_line=0.33, offset_x=0.0, retouch=0.25, vignette=0.06, sharpen=0.25,
+        denoise=4,
         grade='none'),          # user 2026-11-19: keep professional ungraded; vivid for natural
 }
 
@@ -127,6 +129,10 @@ def apply(img: np.ndarray, matte: np.ndarray, face_bbox, p: dict) -> np.ndarray:
     """img: BGR uint8 (already cropped); matte: person 0..1 same size; face_bbox in img pixels."""
     H, W = img.shape[:2]
     scale = H / 1500.0                                       # radii are tuned for a 1200x1500 output
+    if p.get('denoise'):
+        # Webcam frames carry compression blocks and sensor noise; remove them before any detail
+        # enhancement, otherwise texture/sharpening amplify them into a 'crunchy' look.
+        img = cv2.fastNlMeansDenoisingColored(img, None, p['denoise'], p['denoise'], 5, 15)
     f = img.astype(np.float32) / 255.0
     fm = face_mask(img.shape, face_bbox, matte)
 
