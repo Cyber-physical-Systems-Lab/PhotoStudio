@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>portrait_camera</name>
+  <version>0.1.0</version>
+  <description>Webcam node (OpenCV) publishing images and camera info; swappable for a DSLR.</description>
+  <maintainer email="nova5photo@example.com">Nova5Photo</maintainer>
+  <license>MIT</license>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>portrait_interfaces</exec_depend>
+  <test_depend>python3-pytest</test_depend>
+  <export><build_type>ament_python</build_type></export>
+</package>

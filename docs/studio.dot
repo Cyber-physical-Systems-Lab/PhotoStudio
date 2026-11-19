@@ -1,0 +1,50 @@
+digraph studio {
+  graph [rankdir=TB, bgcolor=white, fontname="Ubuntu", fontsize=20, nodesep=0.32, ranksep=0.48, pad=0.18, label="Nova5Photo studio", labelloc=t];
+  node [fontname="Ubuntu", fontsize=13, margin="0.14,0.08"];
+  edge [fontname="Ubuntu", fontsize=11, arrowsize=0.72];
+  subgraph cluster_arch {
+    label="Hardware and software"; fontsize=16; margin=16;
+    camera [shape=box,label="Logitech BRIO\nheld by Robotiq 2F-85"];
+    cam [label="camera_node"];
+    perception [label="perception_node"];
+    session [label="session_node"];
+    arm [label="arm_node\nIK and safety checks"];
+    voice [label="voice_node"];
+    robot [shape=box,label="Dobot Nova 5"];
+    speaker [shape=box,label="Studio speaker"];
+    raw [shape=folder,label="Raw shots + session log"];
+    post [label="Post-processing watcher\nselect frame, crop and tone"];
+    jpg [shape=note,label="Finished portrait"];
+    camera -> cam [label="USB frames"];
+    cam -> perception [label="images"];
+    perception -> session [label="face position and head pose"];
+    session -> arm [label="pose request"];
+    arm -> robot [label="TCP/IP"];
+    robot -> camera [label="positions camera",constraint=false];
+    session -> voice [label="prompt"];
+    voice -> speaker [label="speech"];
+    session -> raw [label="save burst and mark complete"];
+    raw -> post [label="capture_complete.json"];
+    post -> jpg;
+    {rank=same; arm;voice;raw}
+  }
+  subgraph cluster_sequence {
+    label="Studio session"; fontsize=16; margin=16;
+    node [shape=box];
+    greet [label="Start session\nHome arm and greet subject"];
+    find [label="Find face and guide subject to mark\nOptional marker calibration"];
+    frame [label="Frame shot at target angle\nRecheck face and adjust camera"];
+    shoot [label="Guide subject, count down\nand capture burst"];
+    done [label="Thank subject and return home\nSignal post-processing"];
+    lost [label="Stop arm and ask subject\nto return to mark"];
+    abort [label="Abort session"];
+    greet -> find -> frame -> shoot;
+    shoot -> frame [label="next angle"];
+    shoot -> done [label="last angle"];
+    frame -> lost [label="face lost",style=dashed];
+    shoot -> lost [style=dashed,label="face lost"];
+    lost -> frame [label="face recovered",style=dashed];
+    lost -> abort [label="timeout",style=dashed];
+  }
+  {rank=same;camera;greet}
+}

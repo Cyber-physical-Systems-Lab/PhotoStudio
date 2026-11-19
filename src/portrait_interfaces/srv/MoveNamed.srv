@@ -1,0 +1,4 @@
+string name                     # e.g. home, scan_left, scan_right (see portrait.yaml)
+---
+bool success
+string message

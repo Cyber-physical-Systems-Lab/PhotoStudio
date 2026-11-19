@@ -1,0 +1,135 @@
+# Nova 5 portrait photographer: one parameter file for sim and real.
+# All positions are in the robot base frame (base_link): x towards the subject's marked spot,
+# z up, origin at the base of the arm. Angles in degrees unless the name says otherwise.
+
+arm_node:
+  ros__parameters:
+    backend: sim                      # overridden by the launch file: sim | fake | real
+    rate_hz: 50.0
+    # Camera mount (tool_link = flange -> camera optical frame). Since 2026-11-18 a Logitech BRIO is
+    # held by its clip tail in the Robotiq 2F-85: the lens looks along the flange -y axis, image up
+    # is flange +z, lens ~0.20 m out from the flange face. ESTIMATE from the 2F-85 / BRIO
+    # dimensions, confirmed in direction with an AprilTag; refine with a hand-eye calibration.
+    camera_mount_xyz: [0.0, -0.01, 0.20]
+    camera_mount_rpy_deg: [-90.0, 0.0, 180.0]
+    # Layout: every position below is in a "layout" frame whose +x points from the robot to the
+    # subject. layout_yaw_deg is that direction in the robot base frame (-90 = subject along base -y).
+    layout_yaw_deg: -90.0
+    # Narrowed joint limits (deg) and named poses: generated 2026-11-18 by
+    #   scripts/gen_layout_poses.py --face-base 0.0 -1.597 0.338 --yaw -90 --standoff 1.0 --scan-dz -0.03 0.20
+    #     (camera_above_eyes_m 0.10, shot poses also solved for faces +-0.15 / +-0.15 / +-0.08 m off the seat)
+    #     --seed -82.69 -50.67 -109.12 63.83 -89.67 5.54
+    # (face measured with an AprilTag at the seat). One elbow/wrist family (joint3 < 0, joint5 < 0,
+    # away from the wrist singularity at 0 deg). Re-run the script if the seat or the mount changes.
+    joint_lower_deg: [-140.0, -98.0, -135.0, 2.0, -124.0, -25.0]
+    joint_upper_deg: [-57.0, -11.0, -27.0, 89.0, -64.0, 75.0]
+    # Named poses (joint angles, deg). Every named pose is checked against the safety limits
+    # at start-up; the node refuses to start if any of them is unsafe.
+    named_poses:
+      # home: camera 1.0 m from the seat, 15 deg to the subject's left, just above eye height.
+      # scan_left/right: -25 / -5 deg. scan_low only 3 cm lower (with the camera 0.2 m above the
+      # flange the elbow would hit the base surface); scan_high +0.20 m for taller people.
+      names: [home, scan_left, scan_right, scan_low, scan_high]
+      home: [-103.0, -57.8, -91.4, 51.6, -94.0, 27.7]
+      scan_left: [-114.7, -72.9, -52.7, 30.0, -96.5, 49.4]
+      scan_right: [-85.4, -52.2, -109.3, 63.0, -90.1, 0.4]
+      scan_low: [-103.0, -61.5, -90.2, 54.2, -94.0, 27.7]
+      scan_high: [-103.0, -36.6, -88.7, 27.8, -94.0, 27.7]
+    safety:
+      box_min: [0.45, -0.65, 0.22]    # camera position limits (layout frame); widened 2026-11-18 after
+      box_max: [0.90, 0.20, 0.80]     # the real run (paths between poses touched x 0.817 / y +0.1)
+      link_x_max: 0.90                # keep-out plane towards the subject: ~0.7 m from the seated face
+      link_z_min: 0.05                # no link below the top of the pedestal
+      min_face_distance: 0.45         # camera / links to the face centre [m]
+      max_cart_speed: 0.10            # camera speed cap [m/s]
+      max_joint_speed_deg: 20.0       # per-joint cap [deg/s]
+      max_joint_step_deg: 90.0        # largest joint change in one free move
+      face_timeout: 1.0               # stop a face-required move if the face is lost [s]
+    # Subject's marked spot (face centre), used for distance checks until a face is seen.
+    nominal_face_position: [1.597, 0.0, 0.338]   # seat at base -y, AprilTag 2026-11-18
+    sim:
+      command_topic: /isaac/joint_command
+      state_topic: /isaac/joint_states
+    gripper:
+      check: true                     # real robot only: camera held by the Robotiq 2F-85 (read-only check)
+      slave_id: 9
+    real:
+      robot_ip: 192.168.0.37
+      speed_factor: 10                # global SpeedFactor, percent. 10 for the first run.
+      speed_j: 30                     # per-move SpeedJ, percent
+      acc_j: 20                       # per-move AccJ, percent
+      collision_level: 3              # SetCollisionLevel 1..5 (higher = more sensitive)
+      verify_kinematics: true         # compare URDF FK with the controller pose before moving
+      verify_tolerance_m: 0.01
+
+camera_node:
+  ros__parameters:
+    device: /dev/video0
+    width: 3840                       # capture: the shots are saved at this resolution (4K)
+    height: 2160
+    publish_width: 1920               # streamed for face tracking / framing (fast)
+    publish_height: 1080
+    still_jpeg_quality: 97
+    fps: 30
+    fourcc: MJPG
+    hfov_deg: 82.0                    # BRIO default (90 deg diagonal); used only without a calibration file
+    calibration_file: ""              # OpenCV YAML from scripts/calibrate_camera.py
+    frame_id: camera_optical_frame
+
+perception_node:
+  ros__parameters:
+    detect_width: 640                 # frames are downscaled to this width for detection
+    score_threshold: 0.7
+    interocular_m: 0.063
+
+voice_node:
+  ros__parameters:
+    language: en                      # en | sv | zh
+    engine: neural                    # neural (scripts/tts_server.py, started by the launch) | espeak-ng | none
+    rate_wpm: 150                     # espeak-ng only (also the fallback if the neural service is down)
+    tts_socket: /tmp/nova5photo_tts.sock
+    # Neural voices, loaded once by scripts/tts_server.py (in .venv-tts). Chosen 2026-11-18.
+    voices:
+      en: piper:voices/piper/en_GB-alba-medium.onnx
+      sv: piper:voices/piper/sv_SE-nst-medium.onnx
+      zh: kokoro:z:zm_yunxi
+
+session_node:
+  ros__parameters:
+    output_dir: ~/Nova5Photo/portraits
+    language: en
+    standoff_m: 1.0                   # camera to face distance (also right for an A7R III + 50 mm)
+    camera_above_eyes_m: 0.10         # camera above eye height, looking slightly down (0.03 was below the arm's reach for a seated subject, 2026-11-18)
+    eye_line_fraction: 0.38           # eyes this far from the top of the raw frame
+    # Shot poses: azimuth around the face (+ = camera to the subject's right side, - = left side)
+    # and shots per pose. Negative azimuths keep the Nova 5 wrist away from its singularity.
+    shot_azimuths_deg: [-8.0, -15.0, -22.0]   # in order around the face: small arm moves between angles
+    shot_counts: [2, 2, 2]
+    # One spoken cue per angle (in order, repeating), not checked. Keys in portrait_voice/phrases.py:
+    # smile, expr_big_smile, expr_thumbs_up, expr_serious, expr_laugh, expr_arms_crossed, expr_look_away
+    expressions: [smile, expr_big_smile, expr_thumbs_up]
+    shot_interval_s: 0.6
+    framing_tolerance: 0.05           # fraction of image size
+    max_framing_iterations: 3
+    observations_per_measure: 3       # detections averaged (median) per measurement
+    settle_s: 0.4                     # wait after a move before measuring
+    frame_timeout_s: 2.0              # abort a shot if no new camera frame arrives in time
+    yaw_tolerance_deg: 10.0
+    pitch_tolerance_deg: 12.0
+    max_corrections: 3
+    face_lost_timeout_s: 1.0          # stop the arm if the face is gone this long
+    reacquire_timeout_s: 12.0         # give up the session after this long without a face
+    search_poses: [home, scan_high, scan_low, scan_left, scan_right]
+    # Marked spot (x, y of the face in the base frame) and how far off it a person may stand before
+    # the voice asks them to step (x, y tolerance in metres). Height is never corrected.
+    mark_position: [1.597, 0.0]         # seat (layout frame), AprilTag 2026-11-18
+    mark_tolerance_m: [0.25, 0.25]      # only ask people to move when this far off the seat; the arm adapts
+    # AprilTag held in front of the eyes for ~1 s after the face is found: exact face distance.
+    marker:
+      enabled: true
+      id: 4
+      size_m: 0.0315                  # black square edge of the printed tag
+      dictionary: DICT_APRILTAG_36h11
+      timeout_s: 5.0                  # after the prompt has been spoken
+      frames: 5                       # consecutive detections within 2 cm
+      eye_offset_m: 0.05              # tag held this far in front of the eyes

@@ -1,0 +1,5 @@
+string key                      # phrase key from the phrase table (optional)
+string text                     # free text, used when key is empty
+bool wait                       # block until speech has finished
+---
+bool success

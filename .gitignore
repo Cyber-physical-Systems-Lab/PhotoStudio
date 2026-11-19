@@ -1,0 +1,14 @@
+build/
+install/
+log/
+.venv/
+.venv-tts/
+/g2pW/
+portraits/
+calibration/
+__pycache__/
+*.pyc
+docs/sim_results/*.mp4
+/layout/**/*.[jJ][pP][gG]
+/layout/**/*.[jJ][pP][eE][gG]
+.vscode/

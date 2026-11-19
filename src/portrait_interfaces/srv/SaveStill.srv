@@ -1,0 +1,9 @@
+# Save the camera's latest full-resolution frame (e.g. 4K) to a file.
+string path            # .jpg or .png
+float64 not_before     # wall-clock time [s]: the frame must have been captured after this
+---
+bool success
+string message
+float64 stamp          # wall-clock capture time of the saved frame
+int32 width
+int32 height

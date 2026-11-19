@@ -1,0 +1,5 @@
+string name                     # subject name, used for the output folder
+string language                 # en | sv (empty = configured default)
+---
+bool accepted
+string message

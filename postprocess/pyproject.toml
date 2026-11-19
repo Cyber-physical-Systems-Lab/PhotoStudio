@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "portrait-post"
+version = "0.1.0"
+description = "Turns raw portrait captures into webpage portraits (best frame, simulated depth of field, tone, crop). Not a ROS package."
+requires-python = ">=3.10"
+dependencies = ["numpy<2", "opencv-contrib-python-headless", "pillow", "torch", "torchvision", "transformers", "mediapipe"]
+
+[project.scripts]
+portrait-post = "portrait_post.cli:main"
+portrait-post-watch = "portrait_post.watch:main"
+
+[tool.setuptools]
+packages = ["portrait_post"]
+
+[tool.setuptools.package-data]
+portrait_post = ["models/*.onnx"]

@@ -1,0 +1,7 @@
+# Move the camera optical frame to a pose in the robot base frame.
+geometry_msgs/Pose target
+bool require_face               # abort if the face is lost while moving
+float32 speed_scale             # 0..1 of the configured caps (0 = default 1.0)
+---
+bool success
+string message
