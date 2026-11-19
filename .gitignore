@@ -4,6 +4,7 @@ log/
 .venv/
 .venv-tts/
 /g2pW/
+/voices/piper/*.onnx
 portraits/
 calibration/
 __pycache__/

@@ -28,6 +28,14 @@ python3 -m venv .venv
 
 Set `voice:=espeak-ng` for lightweight offline speech (install the Ubuntu `espeak-ng` package), or `voice:=none` for silent operation. Both modes work with the regular ROS installation. The default, `voice:=neural`, uses Piper for English and Swedish and Kokoro for Mandarin. The configured voices are in [portrait.yaml](src/portrait_bringup/config/portrait.yaml).
 
+For `voice:=neural`, download both Piper models before the first launch. The server loads all configured voices at startup. From the repository root, save the weights beside their included `.onnx.json` configurations:
+
+```bash
+base=https://huggingface.co/rhasspy/piper-voices/resolve/main
+curl -fL "$base/en/en_GB/alba/medium/en_GB-alba-medium.onnx" -o voices/piper/en_GB-alba-medium.onnx
+curl -fL "$base/sv/sv_SE/nst/medium/sv_SE-nst-medium.onnx" -o voices/piper/sv_SE-nst-medium.onnx
+```
+
 The neural server runs as a separate process. By default it uses `.venv-tts/bin/python` to isolate its machine-learning dependencies. To share the project’s existing Python 3.10 environment, run the following from the workspace root before launching ROS:
 
 ```bash
